@@ -5,11 +5,12 @@ import ReactiveSwift
 import Result
 
 public protocol RewardPledgeViewModelInputs {
-  func configure(with project: Project)
+  func configure(with reward: Reward)
+  func viewDidLoad()
 }
 
 public protocol RewardPledgeViewModelOutputs {
-
+  var reward: Signal<Reward, NoError> { get }
 }
 
 public protocol RewardPledgeViewModelType {
@@ -17,22 +18,30 @@ public protocol RewardPledgeViewModelType {
   var outputs: RewardPledgeViewModelOutputs { get }
 }
 
-public class RewardPledgeViewModel:
-  RewardPledgeViewModelType,
-  RewardPledgeViewModelInputs,
-  RewardPledgeViewModelOutputs {
+private typealias Type = RewardPledgeViewModelType
+private typealias Inputs = RewardPledgeViewModelInputs
+private typealias Outputs = RewardPledgeViewModelOutputs
+
+public class RewardPledgeViewModel: Type, Inputs, Outputs {
   public init() {
-    self.configureProjectProperty.signal
+    let reward = self.configureRewardProperty.signal
       .skipNil()
-      .observeValues { project in
-        print("*** :\(project.name)")
-    }
+
+    self.reward = Signal.combineLatest(reward.signal, self.viewDidLoadProperty.signal)
+      .map(first)
   }
 
-  private let configureProjectProperty = MutableProperty<Project?>(nil)
-  public func configure(with project: Project) {
-    self.configureProjectProperty.value = project
+  private let configureRewardProperty = MutableProperty<Reward?>(nil)
+  public func configure(with reward: Reward) {
+    self.configureRewardProperty.value = reward
   }
+
+  private let viewDidLoadProperty = MutableProperty(())
+  public func viewDidLoad() {
+    self.viewDidLoadProperty.value = ()
+  }
+
+  public let reward: Signal<Reward, NoError>
 
   public var inputs: RewardPledgeViewModelInputs { return self }
   public var outputs: RewardPledgeViewModelOutputs { return self }
